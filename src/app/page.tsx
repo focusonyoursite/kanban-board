@@ -33,8 +33,8 @@ export default function KanbanBoard() {
     console.log('Drag ended:', { source, destination });
 
     // If dropped outside a droppable or in the same position, do nothing
-    if (!destination) {
-      console.log('No destination, cancelling drag');
+    if (!destination || !board) {
+      console.log('No destination or board not loaded, cancelling drag');
       return;
     }
 
@@ -104,6 +104,8 @@ export default function KanbanBoard() {
       console.log('Task moved successfully');
     } catch (error) {
       console.error('Failed to move task:', error);
+      // Revert the state if the API call fails
+      setBoard(board);
     }
   };
 
