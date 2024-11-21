@@ -112,6 +112,8 @@ export async function getBoard(boardId: string): Promise<Board | null> {
 // Database initialization function
 export async function initializeDatabase() {
   try {
+    console.log('Starting database initialization...');
+    
     // Create boards table
     await sql`
       CREATE TABLE IF NOT EXISTS boards (
@@ -120,6 +122,7 @@ export async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+    console.log('Boards table created or verified');
 
     // Create columns table
     await sql`
@@ -130,6 +133,7 @@ export async function initializeDatabase() {
         FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE CASCADE
       )
     `;
+    console.log('Columns table created or verified');
 
     // Create tasks table
     await sql`
@@ -144,9 +148,11 @@ export async function initializeDatabase() {
         FOREIGN KEY (column_id) REFERENCES columns(id) ON DELETE CASCADE
       )
     `;
+    console.log('Tasks table created or verified');
 
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
+    throw error; // Re-throw to handle in the API route
   }
 }
