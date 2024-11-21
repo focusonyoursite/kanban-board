@@ -30,7 +30,10 @@ export async function PUT(
   } catch (error) {
     console.error('Failed to update task:', error);
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      { 
+        error: 'Failed to update task',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     );
   }
@@ -61,7 +64,10 @@ export async function DELETE(
   } catch (error) {
     console.error('Failed to delete task:', error);
     return NextResponse.json(
-      { error: 'Failed to delete task' },
+      { 
+        error: 'Failed to delete task',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     );
   }

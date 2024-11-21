@@ -21,7 +21,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error moving task:', error);
     return NextResponse.json(
-      { error: 'Failed to move task' }, 
+      { 
+        error: 'Failed to move task',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      }, 
       { status: 500 }
     );
   }
