@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Board, Column, Task } from '../types';
 import TaskModal from '@/components/TaskModal';
 
@@ -51,7 +51,7 @@ export default function KanbanBoard() {
     const [movedTask] = sourceColumn.tasks.splice(source.index, 1);
     
     // Update task status based on destination column
-    movedTask.status = destColumn.title.toLowerCase().replace(' ', '-') as Task['status'];
+    movedTask.status = destColumn.title.toLowerCase().replace(' ', '-') as Task['status']
 
     // Add task to destination column
     destColumn.tasks.splice(destination.index, 0, movedTask);
