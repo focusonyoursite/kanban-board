@@ -33,7 +33,7 @@ export async function createBoard(title: string): Promise<Board> {
 
 export async function addTask(columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
   const taskId = uuidv4();
-  const now = new Date();
+  const now = new Date().toISOString();
 
   await sql`
     INSERT INTO tasks (id, column_id, title, description, status, created_at, updated_at)
@@ -51,15 +51,16 @@ export async function addTask(columnId: string, task: Omit<Task, 'id' | 'created
   return {
     id: taskId,
     ...task,
-    createdAt: now,
-    updatedAt: now
+    createdAt: new Date(now),
+    updatedAt: new Date(now)
   };
 }
 
 export async function moveTask(taskId: string, newColumnId: string): Promise<void> {
+  const now = new Date().toISOString();
   await sql`
     UPDATE tasks 
-    SET column_id = ${newColumnId}, updated_at = NOW() 
+    SET column_id = ${newColumnId}, updated_at = ${now}
     WHERE id = ${taskId}
   `;
 }
