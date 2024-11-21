@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Board, Column, Task } from '../types';
+import TaskModal from '@/components/TaskModal';
 
 export default function KanbanBoard() {
   const [board, setBoard] = useState<Board | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState<Column | null>(null);
 
   useEffect(() => {
     // Fetch initial board data
@@ -71,6 +74,37 @@ export default function KanbanBoard() {
     }
   };
 
+  const handleAddTask = async (title: string, description: string) => {
+    if (!selectedColumn || !board) return;
+
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          columnId: selectedColumn.id,
+          title,
+          description,
+          status: selectedColumn.title.toLowerCase().replace(' ', '-')
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to create task');
+
+      const newTask = await response.json();
+
+      // Update local state
+      const newBoard = JSON.parse(JSON.stringify(board)) as Board;
+      const column = newBoard.columns.find(col => col.id === selectedColumn.id);
+      if (column) {
+        column.tasks.push(newTask);
+        setBoard(newBoard);
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
+  };
+
   if (!board) return <div>Loading...</div>;
 
   return (
@@ -80,12 +114,24 @@ export default function KanbanBoard() {
         <div className="board-container">
           {board.columns.map((column) => (
             <div key={column.id} className="column">
-              <h2 className="text-xl font-semibold mb-4">{column.title}</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">{column.title}</h2>
+                <button
+                  onClick={() => {
+                    setSelectedColumn(column);
+                    setModalOpen(true);
+                  }}
+                  className="px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                >
+                  Add Task
+                </button>
+              </div>
               <Droppable droppableId={column.id}>
                 {(provided) => (
                   <div 
                     {...provided.droppableProps} 
                     ref={provided.innerRef}
+                    className="min-h-[200px]"
                   >
                     {column.tasks.map((task, index) => (
                       <Draggable 
@@ -118,6 +164,18 @@ export default function KanbanBoard() {
           ))}
         </div>
       </DragDropContext>
+      
+      {selectedColumn && (
+        <TaskModal
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedColumn(null);
+          }}
+          onSubmit={handleAddTask}
+          columnTitle={selectedColumn.title}
+        />
+      )}
     </div>
   );
 }
