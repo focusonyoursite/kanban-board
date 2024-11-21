@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Board, Column, Task } from '../types';
 import TaskModal from '@/components/TaskModal';
+import TaskDetailsModal from '@/components/TaskDetailsModal';
 
 export default function KanbanBoard() {
   const [board, setBoard] = useState<Board | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedColumn, setSelectedColumn] = useState<Column | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     // Fetch initial board data
@@ -105,6 +108,63 @@ export default function KanbanBoard() {
     }
   };
 
+  const handleUpdateTask = async (taskId: string, title: string, description: string) => {
+    if (!board) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description })
+      });
+
+      if (!response.ok) throw new Error('Failed to update task');
+
+      const updatedTask = await response.json();
+
+      // Update local state
+      const newBoard = JSON.parse(JSON.stringify(board)) as Board;
+      const column = newBoard.columns.find(col => 
+        col.tasks.some(task => task.id === taskId)
+      );
+
+      if (column) {
+        const taskIndex = column.tasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+          column.tasks[taskIndex] = updatedTask;
+          setBoard(newBoard);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!board) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete task');
+
+      // Update local state
+      const newBoard = JSON.parse(JSON.stringify(board)) as Board;
+      const column = newBoard.columns.find(col => 
+        col.tasks.some(task => task.id === taskId)
+      );
+
+      if (column) {
+        column.tasks = column.tasks.filter(task => task.id !== taskId);
+        setBoard(newBoard);
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
+  };
+
   if (!board) return <div>Loading...</div>;
 
   return (
@@ -144,7 +204,11 @@ export default function KanbanBoard() {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="task-card"
+                            className="task-card cursor-pointer"
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setDetailsModalOpen(true);
+                            }}
                           >
                             <h3 className="font-medium">{task.title}</h3>
                             {task.description && (
@@ -174,6 +238,22 @@ export default function KanbanBoard() {
           }}
           onSubmit={handleAddTask}
           columnTitle={selectedColumn.title}
+        />
+      )}
+
+      {selectedTask && (
+        <TaskDetailsModal
+          isOpen={detailsModalOpen}
+          onClose={() => {
+            setDetailsModalOpen(false);
+            setSelectedTask(null);
+          }}
+          onUpdate={handleUpdateTask}
+          onDelete={handleDeleteTask}
+          task={selectedTask}
+          columnTitle={board.columns.find(col => 
+            col.tasks.some(task => task.id === selectedTask.id)
+          )?.title || ''}
         />
       )}
     </div>
