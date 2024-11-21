@@ -30,14 +30,19 @@ export default function KanbanBoard() {
 
   const onDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
+    console.log('Drag ended:', { source, destination });
 
     // If dropped outside a droppable or in the same position, do nothing
-    if (!destination) return;
+    if (!destination) {
+      console.log('No destination, cancelling drag');
+      return;
+    }
 
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
     ) {
+      console.log('Dropped in same position, no action needed');
       return;
     }
 
@@ -48,13 +53,27 @@ export default function KanbanBoard() {
     const sourceColumn = newBoard.columns.find(col => col.id === source.droppableId);
     const destColumn = newBoard.columns.find(col => col.id === destination.droppableId);
 
-    if (!sourceColumn || !destColumn) return;
+    if (!sourceColumn || !destColumn) {
+      console.error('Source or destination column not found:', { 
+        sourceId: source.droppableId, 
+        destId: destination.droppableId,
+        columns: newBoard.columns.map(c => ({ id: c.id, title: c.title }))
+      });
+      return;
+    }
+
+    console.log('Moving task between columns:', {
+      from: sourceColumn.title,
+      to: destColumn.title,
+      sourceIndex: source.index,
+      destIndex: destination.index
+    });
 
     // Remove task from source column
     const [movedTask] = sourceColumn.tasks.splice(source.index, 1);
     
     // Update task status based on destination column
-    movedTask.status = destColumn.title.toLowerCase().replace(' ', '-') as Task['status']
+    movedTask.status = destColumn.title.toLowerCase().replace(' ', '-') as Task['status'];
 
     // Add task to destination column
     destColumn.tasks.splice(destination.index, 0, movedTask);
@@ -64,7 +83,12 @@ export default function KanbanBoard() {
 
     // Send update to backend
     try {
-      await fetch('/api/tasks/move', {
+      console.log('Sending move request to backend:', {
+        taskId: movedTask.id,
+        newColumnId: destination.droppableId
+      });
+
+      const response = await fetch('/api/tasks/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,6 +96,12 @@ export default function KanbanBoard() {
           newColumnId: destination.droppableId
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to move task: ' + await response.text());
+      }
+
+      console.log('Task moved successfully');
     } catch (error) {
       console.error('Failed to move task:', error);
     }
@@ -187,11 +217,11 @@ export default function KanbanBoard() {
                 </button>
               </div>
               <Droppable droppableId={column.id}>
-                {(provided) => (
+                {(provided, snapshot) => (
                   <div 
                     {...provided.droppableProps} 
                     ref={provided.innerRef}
-                    className="min-h-[200px]"
+                    className={`column-content ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
                   >
                     {column.tasks.map((task, index) => (
                       <Draggable 
@@ -199,12 +229,12 @@ export default function KanbanBoard() {
                         draggableId={task.id} 
                         index={index}
                       >
-                        {(provided) => (
+                        {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="task-card cursor-pointer"
+                            className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
                             onClick={() => {
                               setSelectedTask(task);
                               setDetailsModalOpen(true);
