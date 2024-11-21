@@ -5,6 +5,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { Board, Column, Task } from '../types';
 import TaskModal from '@/components/TaskModal';
 import TaskDetailsModal from '@/components/TaskDetailsModal';
+import { Button } from '@/components/ui/button';
 
 export default function KanbanBoard() {
   const [board, setBoard] = useState<Board | null>(null);
@@ -208,15 +209,15 @@ export default function KanbanBoard() {
             <div key={column.id} className="column">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">{column.title}</h2>
-                <button
+                <Button
                   onClick={() => {
                     setSelectedColumn(column);
                     setModalOpen(true);
                   }}
-                  className="px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                  size="sm"
                 >
                   Add Task
-                </button>
+                </Button>
               </div>
               <Droppable droppableId={column.id}>
                 {(provided, snapshot) => (
