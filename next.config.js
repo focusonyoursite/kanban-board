@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable PWA features for now
-  pwa: {
-    disable: true,
-    dest: 'public'
+  // Progressive Web App configuration
+  experimental: {
+    serviceWorker: false
   }
 }
 
